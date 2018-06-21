@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+
+
+<title>
+  
+    C++模板实现的队列多线程安全
+  
+</title>
+
+<meta name="description" content="12345678910111213141516171819202122232425262728293031323334353637383940414243444546474849505152535455565758596061626364656667#pragma once#include &amp;lt;iostream&amp;gt;#include &amp;lt;queue&amp;gt; #include &amp;lt;mu">
+<meta property="og:type" content="article">
+<meta property="og:title" content="C++模板实现的队列多线程安全">
+<meta property="og:url" content="http://yoursite.com/2018/06/21/C-模板实现的队列多线程安/index.html">
+<meta property="og:site_name" content="计算机视觉博客">
+<meta property="og:description" content="12345678910111213141516171819202122232425262728293031323334353637383940414243444546474849505152535455565758596061626364656667#pragma once#include &amp;lt;iostream&amp;gt;#include &amp;lt;queue&amp;gt; #include &amp;lt;mu">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:updated_time" content="2018-06-21T15:25:30.359Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="C++模板实现的队列多线程安全">
+<meta name="twitter:description" content="12345678910111213141516171819202122232425262728293031323334353637383940414243444546474849505152535455565758596061626364656667#pragma once#include &amp;lt;iostream&amp;gt;#include &amp;lt;queue&amp;gt; #include &amp;lt;mu">
+
+
+  <link rel="alternative" href="/atom.xml" title="计算机视觉博客" type="application/atom+xml">
+
+
+
+  <link rel="icon" href="/favicon.png">
+
+
+<link rel="stylesheet" href="/perfect-scrollbar/css/perfect-scrollbar.min.css">
+<link rel="stylesheet" href="/styles/main.css">
+
+
+
+
+
+
+</head>
+<body
+  
+    class="monochrome"
+  
+  >
+  <div class="mobile-header">
+  <button class="sidebar-toggle" type="button">
+    <span class="icon-bar"></span>
+    <span class="icon-bar"></span>
+    <span class="icon-bar"></span>
+  </button>
+  <a class="title" href="/">计算机视觉博客</a>
+</div>
+
+  <div class="main-container">
+    <div class="sidebar">
+  <div class="header">
+    <h1 class="title"><a href="/">计算机视觉博客</a></h1>
+    
+    <div class="info">
+      <div class="content">
+        
+        
+          <div class="author">kellygod</div>
+        
+      </div>
+      
+        <div class="avatar">
+          
+            <a href="/About"><img src="https://cn.gravatar.com/avatar/35fef74d731255cd569c2c2b0b9e87e4?s=200"></a>
+          
+        </div>
+      
+    </div>
+  </div>
+  <div class="body">
+    
+      
+        <ul class="nav">
+          
+            
+              <li class="category-list-container">
+                <a href="javascript:;">分类</a>
+                
+              </li>
+            
+          
+            
+              <li class="tag-list-container">
+                <a href="javascript:;">标签</a>
+                
+              </li>
+            
+          
+            
+              <li class="archive-list-container">
+                <a href="javascript:;">归档</a>
+                <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/">2018</a><span class="archive-list-count">2</span></li></ul>
+              </li>
+            
+          
+        </ul>
+      
+        <ul class="nav">
+          
+            
+              <li>
+                <a href="/" title="主页">主页</a>
+              </li>
+            
+          
+            
+              <li>
+                <a href="/archives" title="按年份">按年份</a>
+              </li>
+            
+          
+        </ul>
+      
+        <ul class="nav">
+          
+            
+              <li>
+                <a href="https://github.com/kellygodlv" title="Github" target="_blank" rel="noopener">Github</a>
+              </li>
+            
+          
+            
+              <li>
+                <a href="/About" title="关于">关于</a>
+              </li>
+            
+          
+        </ul>
+      
+    
+  </div>
+</div>
+
+    <div class="main-content">
+      
+        <div style="max-width: 1000px">
+      
+          <article id="post-C-模板实现的队列多线程安" class="article article-type-post">
+  
+    <h1 class="article-header">
+      C++模板实现的队列多线程安全
+    </h1>
+  
+  
+
+  <div class="article-info">
+    <span class="article-date">
+  2018-06-21
+</span>
+
+    
+
+    
+
+  </div>
+  <div class="article-entry">
+    <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> once</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;queue&gt; </span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;mutex&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;memory&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;condition_variable&gt;</span></span></span><br><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Threadsafe_queue</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line"><span class="keyword">private</span> :</span><br><span class="line">    <span class="keyword">mutable</span> <span class="built_in">std</span>::mutex mut;</span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">queue</span>&lt;<span class="built_in">std</span>::<span class="built_in">shared_ptr</span>&lt;T&gt;&gt; data_queue;</span><br><span class="line">    <span class="built_in">std</span>::condition_variable data_cond;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    Threadsafe_queue()&#123;&#125;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">wait_end_pop</span><span class="params">(T&amp; value)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="built_in">std</span>::unique_lock&lt;<span class="built_in">std</span>::mutex&gt; lk(mut);</span><br><span class="line">        <span class="comment">//等待队列不为空</span></span><br><span class="line">        data_cond.wait(lk,[<span class="keyword">this</span>]&#123;<span class="keyword">return</span> !data_queue.empty();&#125;);</span><br><span class="line">        value=<span class="built_in">std</span>::move(*data_queue.front());</span><br><span class="line">        data_queue.pop();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">bool</span> <span class="title">try_pop</span><span class="params">(T&amp; value)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="built_in">std</span>::lock_guard&lt;<span class="built_in">std</span>::mutex&gt; lk(mut);</span><br><span class="line">        <span class="keyword">if</span>(data_queue.empty())</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">        value=<span class="built_in">std</span>::move(*data_queue.front());</span><br><span class="line">        data_queue.pop();</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">shared_ptr</span>&lt;T&gt; wait_end_pop()</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">std</span>::unique_lock&lt;<span class="built_in">std</span>::mutex&gt; lk(mut);</span><br><span class="line">        data_cond.wait(lk,[<span class="keyword">this</span>]&#123;<span class="keyword">return</span> !data_queue.empty();&#125;);</span><br><span class="line">        <span class="built_in">std</span>::<span class="built_in">shared_ptr</span>&lt;T&gt; res=data_queue.front();</span><br><span class="line">        data_queue.pop();</span><br><span class="line">        <span class="keyword">return</span> res;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">shared_ptr</span>&lt;T&gt; try_pop()</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">std</span>::lock_guard&lt;<span class="built_in">std</span>::mutex&gt; lk(mut);</span><br><span class="line">        <span class="keyword">if</span>(data_queue.empty())</span><br><span class="line">            <span class="keyword">return</span> <span class="built_in">std</span>::<span class="built_in">shared_ptr</span>&lt;T&gt;();</span><br><span class="line">        <span class="built_in">std</span>::<span class="built_in">shared_ptr</span>&lt;T&gt; res=data_queue.front();</span><br><span class="line">        data_queue.pop();</span><br><span class="line">        <span class="keyword">return</span> res;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">push</span><span class="params">(T new_value)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="built_in">std</span>::<span class="built_in">shared_ptr</span>&lt;T&gt; data(</span><br><span class="line">            <span class="built_in">std</span>::make_shared&lt;T&gt;(<span class="built_in">std</span>::move(new_value)));</span><br><span class="line">        <span class="built_in">std</span>::lock_guard&lt;<span class="built_in">std</span>::mutex&gt; lk(mut);</span><br><span class="line">        data_queue.push(data);</span><br><span class="line">        data_cond.notify_one();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">bool</span> <span class="title">empty</span><span class="params">()</span> <span class="keyword">const</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="built_in">std</span>::lock_guard&lt;<span class="built_in">std</span>::mutex&gt; lk(mut);</span><br><span class="line">        <span class="keyword">return</span> data_queue.empty();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<h2 id="使用方法"><a href="#使用方法" class="headerlink" title="使用方法"></a>使用方法</h2><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;thread&gt;</span></span></span><br><span class="line">Threadsafe_queue&lt;<span class="keyword">int</span>&gt; mQueue=Threadsafe_queue&lt;<span class="keyword">int</span>&gt;();</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc,<span class="keyword">char</span>*argv[])</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">//lambada表达式</span></span><br><span class="line">    <span class="built_in">std</span>::<span class="function">thread <span class="title">mThread</span><span class="params">([]</span></span></span><br><span class="line"><span class="function"><span class="params">        &#123;</span></span></span><br><span class="line"><span class="function"><span class="params">            <span class="keyword">while</span>(<span class="number">1</span>)</span></span></span><br><span class="line"><span class="function">            </span>&#123;</span><br><span class="line">                <span class="keyword">int</span> a;</span><br><span class="line">                mQueue.wait_end_pop(a);</span><br><span class="line">                <span class="built_in">std</span>::<span class="built_in">cout</span>&lt;&lt;a&lt;&lt;<span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">                <span class="keyword">if</span>(a==<span class="number">1</span>) <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">    mThread.detach();</span><br><span class="line">    <span class="keyword">int</span> j=<span class="number">1000</span>;</span><br><span class="line">    <span class="keyword">while</span>(j--)</span><br><span class="line">    &#123;</span><br><span class="line">        mQueue.push(j);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+  </div>
+  <footer class="article-footer">
+    
+  <div class="cc">
+    <a href="http://creativecommons.org/licenses/by-sa/4.0/deed.z" target="_blank" title="Attribution-ShareAlike">
+      <img src="/images/cc/cc.png">
+      
+          <img src="/images/cc/by.png">
+        
+          <img src="/images/cc/sa.png">
+      
+      <span>
+        This work is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.
+      </span>
+    </a>
+  </div>
+
+
+    
+
+  </footer>
+</article>
+
+
+
+
+
+
+
+          <div class="main-footer">
+  
+    © 2018 计算机视觉博客 - Powered by <a href="http://hexo.io" target="_blank">Hexo</a> - Theme <a href="https://github.com/denjones/hexo-theme-chan" target="_blank">Chan</a>
+  
+</div>
+
+      
+        </div>
+      
+    </div>
+  </div>
+  <script src="//apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js"></script>
+
+  <link rel="stylesheet" href="/PhotoSwipe/photoswipe.css">
+  <link rel="stylesheet" href="/PhotoSwipe/default-skin/default-skin.css">
+
+  <!-- Root element of PhotoSwipe. Must have class pswp. -->
+  <div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe.
+             It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+      <!-- Container that holds slides.
+                PhotoSwipe keeps only 3 of them in the DOM to save memory.
+                Don't modify these 3 pswp__item elements, data is added later on. -->
+      <div class="pswp__container">
+        <div class="pswp__item"></div>
+        <div class="pswp__item"></div>
+        <div class="pswp__item"></div>
+      </div>
+
+      <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+      <div class="pswp__ui pswp__ui--hidden">
+
+        <div class="pswp__top-bar">
+
+          <!--  Controls are self-explanatory. Order can be changed. -->
+
+          <div class="pswp__counter"></div>
+
+          <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+          <button class="pswp__button pswp__button--share" title="Share"></button>
+
+          <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+          <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+          <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+          <!-- element will get class pswp__preloader--active when preloader is running -->
+          <div class="pswp__preloader">
+            <div class="pswp__preloader__icn">
+              <div class="pswp__preloader__cut">
+                <div class="pswp__preloader__donut"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+          <div class="pswp__share-tooltip"></div>
+        </div>
+
+        <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)"></button>
+
+        <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button>
+
+        <div class="pswp__caption">
+          <div class="pswp__caption__center"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/PhotoSwipe/photoswipe.js"></script>
+  <script src="/PhotoSwipe/photoswipe-ui-default.js"></script>
+
+
+<script src="/perfect-scrollbar/js/min/perfect-scrollbar.min.js"></script>
+<script src="/scripts/main.js"></script>
+
+</body>
+</html>
